@@ -25,43 +25,44 @@ app.post('/', (req, res) => {
 
 app.post('/build', (req, res) => {
   const client = mgmt.createClient({accessToken: process.env.PERSONAL, headers: {'X-Contentful-Version': req.body.versionNo}})
+  if (client) {
+    client.getSpace(process.env.SPACE_ID)
+    .then((space) => space.getEnvironment('master'))
+    .then((environment) => environment.getAsset(req.body.assetId))
+    .then((asset) => {
+      if (!asset.fields.description) {
+        asset.fields.description = {'en-US': ''};
+      }
 
-  client.getSpace(process.env.SPACE_ID)
-  .then((space) => space.getEnvironment('master'))
-  .then((environment) => environment.getAsset(req.body.assetId))
-  .then((asset) => {
-    if (!asset.fields.description) {
-      asset.fields.description = {'en-US': ''};
-    }
+      const des = asset.fields.description['en-US'];
+      let description = `${des}`;
+      const tagWords = ` ${req.body.allTags}`;
+      let newDescription = '';
 
-    const des = asset.fields.description['en-US'];
-    let description = `${des}`;
-    const tagWords = ` ${req.body.allTags}`;
-    let newDescription = '';
-
-    if (des.includes(tagWords)) {
-      return asset;
-    } else {
-      description = `${des}`;
-      newDescription = description.concat(tagWords);
-      asset.fields.description['en-US'] = newDescription
-      return asset.update()
-    }
-  })
-  .then((asset) => {
-    if (asset.isUpdated()) {
-      return asset.publish()
-    } else {
-      return asset;
-    }
-  })
-  .then((asset) => {
-    if (asset.isPublished()) {
-      res.send(asset);
-      return asset;
-    }
-  })
-  .catch(console.error)
+      if (des.includes(tagWords)) {
+        return asset;
+      } else {
+        description = `${des}`;
+        newDescription = description.concat(tagWords);
+        asset.fields.description['en-US'] = newDescription
+        return asset.update()
+      }
+    })
+    .then((asset) => {
+      if (asset.isUpdated()) {
+        return asset.publish()
+      } else {
+        return asset;
+      }
+    })
+    .then((asset) => {
+      if (asset.isPublished()) {
+        res.send(asset);
+        return asset;
+      }
+    })
+    .catch(console.error)
+  }
 })
 
 app.listen(port, function () {
