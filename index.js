@@ -16,9 +16,11 @@ app.use(function(req, res, next) {
 
 app.post('/', (req, res) => {
   const cda = contentful.createClient({space: process.env.SPACE_ID, accessToken: process.env.ACCESS_TOKEN});
-  cda.getEntry(req.body.sysId).then(response => {
-    res.send(response);
-  }).catch(console.error)
+  if (cda) {
+    cda.getEntry(req.body.sysId).then(response => {
+      res.send(response);
+    }).catch(console.error)
+  }
 })
 
 app.post('/build', (req, res) => {
